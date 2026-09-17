@@ -1,0 +1,45 @@
+﻿# ==========================================
+# Kenya Infrastructure GIS
+# Git Ignore
+# ==========================================
+
+# Environment variables / secrets
+.env
+*.env
+backend/.env
+
+# Python virtual environments
+venv/
+.venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.class
+
+# Node dependencies
+node_modules/
+kenya-infrastructure-gis/node_modules/
+
+# Vite build files
+dist/
+kenya-infrastructure-gis/dist/
+
+# Local development files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp

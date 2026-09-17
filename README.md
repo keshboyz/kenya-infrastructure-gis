@@ -1,4 +1,4 @@
-# Kenya Infrastructure GIS Explorer
+﻿# Kenya Infrastructure GIS Explorer
 
 A full-stack Web GIS application for mapping, managing, visualizing, and spatially analysing infrastructure projects and road corridors across Kenya.
 
@@ -6,6 +6,16 @@ The application combines an interactive React and Leaflet frontend with a FastAP
 
 ---
 
+
+## Application Preview
+
+The interface below demonstrates county-level spatial analysis for Nairobi. The selected county is highlighted on the interactive Leaflet map while infrastructure statistics and PostGIS-derived road-length analysis are displayed in the County Analysis panel.
+
+![Kenya Infrastructure GIS Explorer - Nairobi County Analysis](docs/images/county-analysis-dashboard.png)
+
+The visualization combines interactive web mapping with server-side spatial analysis using PostgreSQL/PostGIS.
+
+---
 ## Project Overview
 
 The Kenya Infrastructure GIS Explorer was developed as a portfolio project demonstrating the integration of Geographic Information Systems (GIS), web development, spatial databases, REST APIs, and spatial analysis.

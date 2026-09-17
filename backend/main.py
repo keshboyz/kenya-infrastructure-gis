@@ -37,7 +37,7 @@ app = FastAPI(
         "REST API and PostGIS spatial analysis "
         "for the Kenya Infrastructure GIS Explorer."
     ),
-    version="5.1.0",
+    version="5.2.0",
 )
 
 
@@ -221,17 +221,333 @@ def county_to_geojson(county, geometry):
 
 
 # =========================================================
+# REUSABLE COUNTY SPATIAL ANALYSIS
+# =========================================================
+
+def build_county_analysis(
+    county_id,
+    db,
+):
+    # -----------------------------------------------------
+    # FIND COUNTY
+    # -----------------------------------------------------
+
+    county = (
+        db.query(CountyModel)
+        .filter(
+            CountyModel.id == county_id
+        )
+        .first()
+    )
+
+    if county is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"County with ID "
+                f"{county_id} not found"
+            ),
+        )
+
+    if county.geom is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Geometry for county "
+                f"{county_id} not found"
+            ),
+        )
+
+    # -----------------------------------------------------
+    # COUNTY GEOMETRY
+    # -----------------------------------------------------
+
+    county_geometry = (
+        db.query(
+            CountyModel.geom
+        )
+        .filter(
+            CountyModel.id == county_id
+        )
+        .scalar_subquery()
+    )
+
+    # -----------------------------------------------------
+    # PROJECTS INTERSECTING COUNTY
+    # -----------------------------------------------------
+
+    projects_inside = (
+        db.query(ProjectModel)
+        .filter(
+            func.ST_Intersects(
+                ProjectModel.geom,
+                county_geometry,
+            )
+        )
+        .order_by(
+            ProjectModel.id
+        )
+        .all()
+    )
+
+    project_results = [
+        project_to_dict(project)
+        for project in projects_inside
+    ]
+
+    # -----------------------------------------------------
+    # ROADS INTERSECTING COUNTY
+    # -----------------------------------------------------
+
+    roads_intersecting = (
+        db.query(RoadModel)
+        .filter(
+            func.ST_Intersects(
+                RoadModel.geom,
+                county_geometry,
+            )
+        )
+        .order_by(
+            RoadModel.id
+        )
+        .all()
+    )
+
+    road_results = []
+
+    total_road_length_km = 0.0
+
+    # -----------------------------------------------------
+    # ROAD LENGTH INSIDE COUNTY
+    # -----------------------------------------------------
+
+    for road in roads_intersecting:
+        clipped_road = (
+            func.ST_CollectionExtract(
+                func.ST_Intersection(
+                    RoadModel.geom,
+                    county_geometry,
+                ),
+                2,
+            )
+        )
+
+        length_meters = (
+            db.query(
+                func.ST_Length(
+                    cast(
+                        clipped_road,
+                        Geography,
+                    )
+                )
+            )
+            .filter(
+                RoadModel.id == road.id
+            )
+            .scalar()
+        )
+
+        if length_meters is None:
+            length_km = 0.0
+
+        else:
+            length_km = (
+                float(length_meters)
+                / 1000
+            )
+
+        total_road_length_km += (
+            length_km
+        )
+
+        road_results.append({
+            "id": road.id,
+            "name": road.name,
+            "roadClass": (
+                road.road_class
+            ),
+            "status": road.status,
+            "totalRoadLengthKm": round(
+                road.length_km or 0,
+                2,
+            ),
+            "lengthInsideCountyKm": round(
+                length_km,
+                2,
+            ),
+            "description": (
+                road.description or ""
+            ),
+        })
+
+    # -----------------------------------------------------
+    # PROJECT TYPE SUMMARY
+    # -----------------------------------------------------
+
+    project_type_summary = {}
+
+    for project in projects_inside:
+        project_type = (
+            project.type
+            or "Unknown"
+        )
+
+        project_type_summary[
+            project_type
+        ] = (
+            project_type_summary.get(
+                project_type,
+                0,
+            )
+            + 1
+        )
+
+    # -----------------------------------------------------
+    # PROJECT STATUS SUMMARY
+    # -----------------------------------------------------
+
+    project_status_summary = {}
+
+    for project in projects_inside:
+        project_status = (
+            project.status
+            or "Unknown"
+        )
+
+        project_status_summary[
+            project_status
+        ] = (
+            project_status_summary.get(
+                project_status,
+                0,
+            )
+            + 1
+        )
+
+    # -----------------------------------------------------
+    # ROAD CLASS SUMMARY
+    # -----------------------------------------------------
+
+    road_class_summary = {}
+
+    for road in roads_intersecting:
+        road_class = (
+            road.road_class
+            or "Unknown"
+        )
+
+        road_class_summary[
+            road_class
+        ] = (
+            road_class_summary.get(
+                road_class,
+                0,
+            )
+            + 1
+        )
+
+    # -----------------------------------------------------
+    # ROAD STATUS SUMMARY
+    # -----------------------------------------------------
+
+    road_status_summary = {}
+
+    for road in roads_intersecting:
+        road_status = (
+            road.status
+            or "Unknown"
+        )
+
+        road_status_summary[
+            road_status
+        ] = (
+            road_status_summary.get(
+                road_status,
+                0,
+            )
+            + 1
+        )
+
+    # -----------------------------------------------------
+    # RETURN ANALYSIS
+    # -----------------------------------------------------
+
+    return {
+        "county": {
+            "id": county.id,
+            "name": county.county,
+            "province": county.province,
+            "population": (
+                county.population or 0
+            ),
+            "male": (
+                county.male or 0
+            ),
+            "female": (
+                county.female or 0
+            ),
+        },
+
+        "infrastructure": {
+            "projectCount": len(
+                projects_inside
+            ),
+            "roadCount": len(
+                roads_intersecting
+            ),
+            "roadLengthInsideCountyKm": round(
+                total_road_length_km,
+                2,
+            ),
+        },
+
+        "projectStatusSummary":
+            project_status_summary,
+
+        "projectTypeSummary":
+            project_type_summary,
+
+        "roadClassSummary":
+            road_class_summary,
+
+        "roadStatusSummary":
+            road_status_summary,
+
+        "projects":
+            project_results,
+
+        "roads":
+            road_results,
+
+        "spatialOperations": [
+            "ST_Intersects",
+            "ST_Intersection",
+            "ST_CollectionExtract",
+            "ST_Length",
+            "Geography",
+        ],
+    }
+
+
+# =========================================================
 # HOME
 # =========================================================
 
 @app.get("/")
 def home():
     return {
-        "message": "Kenya Infrastructure GIS API is running",
-        "database": "PostgreSQL",
-        "spatial_extension": "PostGIS",
-        "api_version": "5.1.0",
-        "spatial_analysis": True,
+        "message":
+            "Kenya Infrastructure GIS API is running",
+        "database":
+            "PostgreSQL",
+        "spatial_extension":
+            "PostGIS",
+        "api_version":
+            "5.2.0",
+        "spatial_analysis":
+            True,
+        "county_comparison":
+            True,
     }
 
 
@@ -311,14 +627,18 @@ def create_project(
     db.commit()
     db.refresh(new_project)
 
-    return project_to_dict(new_project)
+    return project_to_dict(
+        new_project
+    )
 
 
 # =========================================================
 # PROJECTS — UPDATE
 # =========================================================
 
-@app.put("/api/projects/{project_id}")
+@app.put(
+    "/api/projects/{project_id}"
+)
 def update_project(
     project_id: int,
     updated_project: ProjectCreate,
@@ -338,13 +658,33 @@ def update_project(
             detail="Project not found",
         )
 
-    project.name = updated_project.name
-    project.county = updated_project.county
-    project.type = updated_project.type
-    project.status = updated_project.status
-    project.latitude = updated_project.latitude
-    project.longitude = updated_project.longitude
-    project.description = updated_project.description
+    project.name = (
+        updated_project.name
+    )
+
+    project.county = (
+        updated_project.county
+    )
+
+    project.type = (
+        updated_project.type
+    )
+
+    project.status = (
+        updated_project.status
+    )
+
+    project.latitude = (
+        updated_project.latitude
+    )
+
+    project.longitude = (
+        updated_project.longitude
+    )
+
+    project.description = (
+        updated_project.description
+    )
 
     project.geom = create_point(
         updated_project.longitude,
@@ -361,7 +701,9 @@ def update_project(
 # PROJECTS — DELETE
 # =========================================================
 
-@app.delete("/api/projects/{project_id}")
+@app.delete(
+    "/api/projects/{project_id}"
+)
 def delete_project(
     project_id: int,
     db: Session = Depends(get_db),
@@ -380,16 +722,18 @@ def delete_project(
             detail="Project not found",
         )
 
-    deleted_project = project_to_dict(
-        project
+    deleted_project = (
+        project_to_dict(project)
     )
 
     db.delete(project)
     db.commit()
 
     return {
-        "message": "Project deleted successfully",
-        "project": deleted_project,
+        "message":
+            "Project deleted successfully",
+        "project":
+            deleted_project,
     }
 
 
@@ -408,7 +752,9 @@ def get_roads(
                 RoadModel.geom
             ).label("geometry"),
         )
-        .order_by(RoadModel.id)
+        .order_by(
+            RoadModel.id
+        )
         .all()
     )
 
@@ -430,8 +776,10 @@ def get_roads(
         )
 
     return {
-        "type": "FeatureCollection",
-        "features": features,
+        "type":
+            "FeatureCollection",
+        "features":
+            features,
     }
 
 
@@ -462,10 +810,8 @@ def create_road(
 
     db.add(new_road)
 
-    # Insert without completing transaction yet.
     db.flush()
 
-    # Calculate geodesic length in metres.
     length_meters = (
         db.query(
             func.ST_Length(
@@ -476,16 +822,19 @@ def create_road(
             )
         )
         .filter(
-            RoadModel.id == new_road.id
+            RoadModel.id
+            == new_road.id
         )
         .scalar()
     )
 
     if length_meters is None:
         new_road.length_km = 0
+
     else:
         new_road.length_km = (
-            float(length_meters) / 1000
+            float(length_meters)
+            / 1000
         )
 
     db.commit()
@@ -498,7 +847,8 @@ def create_road(
             )
         )
         .filter(
-            RoadModel.id == new_road.id
+            RoadModel.id
+            == new_road.id
         )
         .scalar()
     )
@@ -517,7 +867,9 @@ def create_road(
 # ROADS — DELETE
 # =========================================================
 
-@app.delete("/api/roads/{road_id}")
+@app.delete(
+    "/api/roads/{road_id}"
+)
 def delete_road(
     road_id: int,
     db: Session = Depends(get_db),
@@ -542,8 +894,10 @@ def delete_road(
     db.commit()
 
     return {
-        "message": "Road deleted successfully",
-        "road": road_name,
+        "message":
+            "Road deleted successfully",
+        "road":
+            road_name,
     }
 
 
@@ -586,8 +940,177 @@ def get_counties(
         )
 
     return {
-        "type": "FeatureCollection",
-        "features": features,
+        "type":
+            "FeatureCollection",
+        "features":
+            features,
+    }
+
+
+# =========================================================
+# COUNTIES — COMPARE TWO COUNTIES
+#
+# IMPORTANT:
+# This route appears before /api/counties/{county_id}
+# so "compare" is not interpreted as an integer ID.
+# =========================================================
+
+@app.get("/api/counties/compare")
+def compare_counties(
+    county1: int,
+    county2: int,
+    db: Session = Depends(get_db),
+):
+    if county1 == county2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Please select two "
+                "different counties."
+            ),
+        )
+
+    first_analysis = (
+        build_county_analysis(
+            county1,
+            db,
+        )
+    )
+
+    second_analysis = (
+        build_county_analysis(
+            county2,
+            db,
+        )
+    )
+
+    first_county = (
+        first_analysis["county"]
+    )
+
+    second_county = (
+        second_analysis["county"]
+    )
+
+    first_infrastructure = (
+        first_analysis[
+            "infrastructure"
+        ]
+    )
+
+    second_infrastructure = (
+        second_analysis[
+            "infrastructure"
+        ]
+    )
+
+    # -----------------------------------------------------
+    # MATHEMATICAL DIFFERENCES
+    #
+    # Positive = county1 value is larger.
+    # Negative = county2 value is larger.
+    # These values are descriptive only.
+    # -----------------------------------------------------
+
+    population_difference = (
+        first_county["population"]
+        - second_county["population"]
+    )
+
+    male_difference = (
+        first_county["male"]
+        - second_county["male"]
+    )
+
+    female_difference = (
+        first_county["female"]
+        - second_county["female"]
+    )
+
+    project_count_difference = (
+        first_infrastructure[
+            "projectCount"
+        ]
+        - second_infrastructure[
+            "projectCount"
+        ]
+    )
+
+    road_count_difference = (
+        first_infrastructure[
+            "roadCount"
+        ]
+        - second_infrastructure[
+            "roadCount"
+        ]
+    )
+
+    road_length_difference = (
+        first_infrastructure[
+            "roadLengthInsideCountyKm"
+        ]
+        - second_infrastructure[
+            "roadLengthInsideCountyKm"
+        ]
+    )
+
+    return {
+        "counties": [
+            first_analysis,
+            second_analysis,
+        ],
+
+        "comparison": {
+            "county1": {
+                "id":
+                    first_county["id"],
+                "name":
+                    first_county["name"],
+            },
+
+            "county2": {
+                "id":
+                    second_county["id"],
+                "name":
+                    second_county["name"],
+            },
+
+            "populationDifference":
+                population_difference,
+
+            "malePopulationDifference":
+                male_difference,
+
+            "femalePopulationDifference":
+                female_difference,
+
+            "projectCountDifference":
+                project_count_difference,
+
+            "roadCountDifference":
+                road_count_difference,
+
+            "roadLengthDifferenceKm":
+                round(
+                    road_length_difference,
+                    2,
+                ),
+        },
+
+        "interpretation": {
+            "differenceDirection": (
+                "Positive values mean "
+                "county1 has the larger "
+                "numeric value. Negative "
+                "values mean county2 has "
+                "the larger numeric value."
+            ),
+            "comparisonType":
+                "Descriptive spatial comparison",
+        },
+
+        "spatialEngine":
+            "PostgreSQL / PostGIS",
     }
 
 
@@ -602,282 +1125,19 @@ def analyse_county(
     county_id: int,
     db: Session = Depends(get_db),
 ):
-    # -----------------------------------------------------
-    # FIND COUNTY
-    # -----------------------------------------------------
-
-    county = (
-        db.query(CountyModel)
-        .filter(
-            CountyModel.id == county_id
-        )
-        .first()
+    return build_county_analysis(
+        county_id,
+        db,
     )
-
-    if county is None:
-        raise HTTPException(
-            status_code=404,
-            detail="County not found",
-        )
-
-    if county.geom is None:
-        raise HTTPException(
-            status_code=404,
-            detail="County geometry not found",
-        )
-
-    # -----------------------------------------------------
-    # COUNTY GEOMETRY SUBQUERY
-    #
-    # This keeps the spatial operation inside PostgreSQL
-    # instead of repeatedly passing the full county
-    # geometry from Python back to PostGIS.
-    # -----------------------------------------------------
-
-    county_geometry = (
-        db.query(
-            CountyModel.geom
-        )
-        .filter(
-            CountyModel.id == county_id
-        )
-        .scalar_subquery()
-    )
-
-    # -----------------------------------------------------
-    # PROJECTS INSIDE / TOUCHING COUNTY
-    # -----------------------------------------------------
-
-    projects_inside = (
-        db.query(ProjectModel)
-        .filter(
-            func.ST_Intersects(
-                ProjectModel.geom,
-                county_geometry,
-            )
-        )
-        .order_by(
-            ProjectModel.id
-        )
-        .all()
-    )
-
-    project_results = [
-        project_to_dict(project)
-        for project in projects_inside
-    ]
-
-    # -----------------------------------------------------
-    # ROADS INTERSECTING COUNTY
-    # -----------------------------------------------------
-
-    roads_intersecting = (
-        db.query(RoadModel)
-        .filter(
-            func.ST_Intersects(
-                RoadModel.geom,
-                county_geometry,
-            )
-        )
-        .order_by(
-            RoadModel.id
-        )
-        .all()
-    )
-
-    road_results = []
-    total_road_length_km = 0.0
-
-    # -----------------------------------------------------
-    # ROAD LENGTH ACTUALLY INSIDE COUNTY
-    #
-    # ST_Intersection clips each road to the county.
-    #
-    # ST_CollectionExtract(..., 2) ensures only LINESTRING
-    # components are measured if the intersection happens
-    # to return a geometry collection.
-    #
-    # Casting to Geography makes ST_Length return metres.
-    # -----------------------------------------------------
-
-    for road in roads_intersecting:
-        clipped_road = (
-            func.ST_CollectionExtract(
-                func.ST_Intersection(
-                    RoadModel.geom,
-                    county_geometry,
-                ),
-                2,
-            )
-        )
-
-        length_meters = (
-            db.query(
-                func.ST_Length(
-                    cast(
-                        clipped_road,
-                        Geography,
-                    )
-                )
-            )
-            .filter(
-                RoadModel.id == road.id
-            )
-            .scalar()
-        )
-
-        if length_meters is None:
-            length_km = 0.0
-        else:
-            length_km = (
-                float(length_meters) / 1000
-            )
-
-        total_road_length_km += (
-            length_km
-        )
-
-        road_results.append({
-            "id": road.id,
-            "name": road.name,
-            "roadClass": road.road_class,
-            "status": road.status,
-            "totalRoadLengthKm": round(
-                road.length_km or 0,
-                2,
-            ),
-            "lengthInsideCountyKm": round(
-                length_km,
-                2,
-            ),
-            "description": (
-                road.description or ""
-            ),
-        })
-
-    # -----------------------------------------------------
-    # PROJECT TYPE SUMMARY
-    # -----------------------------------------------------
-
-    project_type_summary = {}
-
-    for project in projects_inside:
-        project_type = (
-            project.type or "Unknown"
-        )
-
-        project_type_summary[
-            project_type
-        ] = (
-            project_type_summary.get(
-                project_type,
-                0,
-            ) + 1
-        )
-
-    # -----------------------------------------------------
-    # PROJECT STATUS SUMMARY
-    # -----------------------------------------------------
-
-    project_status_summary = {}
-
-    for project in projects_inside:
-        project_status = (
-            project.status or "Unknown"
-        )
-
-        project_status_summary[
-            project_status
-        ] = (
-            project_status_summary.get(
-                project_status,
-                0,
-            ) + 1
-        )
-
-    # -----------------------------------------------------
-    # ROAD STATUS SUMMARY
-    # -----------------------------------------------------
-
-    road_status_summary = {}
-
-    for road in roads_intersecting:
-        road_status = (
-            road.status or "Unknown"
-        )
-
-        road_status_summary[
-            road_status
-        ] = (
-            road_status_summary.get(
-                road_status,
-                0,
-            ) + 1
-        )
-
-    # -----------------------------------------------------
-    # RETURN SPATIAL ANALYSIS
-    # -----------------------------------------------------
-
-    return {
-        "county": {
-            "id": county.id,
-            "name": county.county,
-            "province": county.province,
-            "population": (
-                county.population or 0
-            ),
-            "male": (
-                county.male or 0
-            ),
-            "female": (
-                county.female or 0
-            ),
-        },
-
-        "infrastructure": {
-            "projectCount": len(
-                projects_inside
-            ),
-            "roadCount": len(
-                roads_intersecting
-            ),
-            "roadLengthInsideCountyKm": round(
-                total_road_length_km,
-                2,
-            ),
-        },
-
-        "projectStatusSummary":
-            project_status_summary,
-
-        "projectTypeSummary":
-            project_type_summary,
-
-        "roadStatusSummary":
-            road_status_summary,
-
-        "projects":
-            project_results,
-
-        "roads":
-            road_results,
-
-        "spatialOperations": [
-            "ST_Intersects",
-            "ST_Intersection",
-            "ST_CollectionExtract",
-            "ST_Length",
-            "Geography",
-        ],
-    }
 
 
 # =========================================================
 # COUNTIES — GET ONE AS GEOJSON
 # =========================================================
 
-@app.get("/api/counties/{county_id}")
+@app.get(
+    "/api/counties/{county_id}"
+)
 def get_county(
     county_id: int,
     db: Session = Depends(get_db),
@@ -890,7 +1150,8 @@ def get_county(
             ).label("geometry"),
         )
         .filter(
-            CountyModel.id == county_id
+            CountyModel.id
+            == county_id
         )
         .first()
     )
@@ -906,7 +1167,9 @@ def get_county(
     if geometry_text is None:
         raise HTTPException(
             status_code=404,
-            detail="County geometry not found",
+            detail=(
+                "County geometry not found"
+            ),
         )
 
     geometry = json.loads(

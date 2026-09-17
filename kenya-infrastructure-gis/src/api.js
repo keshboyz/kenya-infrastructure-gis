@@ -1,21 +1,18 @@
 const BASE_URL =
   "http://127.0.0.1:8000/api";
 
-
 const PROJECTS_URL =
   `${BASE_URL}/projects`;
 
-
 const ROADS_URL =
   `${BASE_URL}/roads`;
-
 
 const COUNTIES_URL =
   `${BASE_URL}/counties`;
 
 
 // =========================================================
-// PROJECTS — GET ALL
+// PROJECTS
 // =========================================================
 
 export async function getProjects() {
@@ -32,10 +29,6 @@ export async function getProjects() {
   return response.json();
 }
 
-
-// =========================================================
-// PROJECTS — CREATE
-// =========================================================
 
 export async function createProject(
   project
@@ -65,10 +58,6 @@ export async function createProject(
   return response.json();
 }
 
-
-// =========================================================
-// PROJECTS — UPDATE
-// =========================================================
 
 export async function updateProject(
   projectId,
@@ -100,10 +89,6 @@ export async function updateProject(
 }
 
 
-// =========================================================
-// PROJECTS — DELETE
-// =========================================================
-
 export async function deleteProject(
   projectId
 ) {
@@ -125,7 +110,7 @@ export async function deleteProject(
 
 
 // =========================================================
-// ROADS — GET ALL AS GEOJSON
+// ROADS
 // =========================================================
 
 export async function getRoads() {
@@ -135,17 +120,13 @@ export async function getRoads() {
 
   if (!response.ok) {
     throw new Error(
-      "Unable to load road network."
+      "Unable to load roads."
     );
   }
 
   return response.json();
 }
 
-
-// =========================================================
-// ROADS — CREATE
-// =========================================================
 
 export async function createRoad(
   road
@@ -176,10 +157,6 @@ export async function createRoad(
 }
 
 
-// =========================================================
-// ROADS — DELETE
-// =========================================================
-
 export async function deleteRoad(
   roadId
 ) {
@@ -201,7 +178,7 @@ export async function deleteRoad(
 
 
 // =========================================================
-// COUNTIES — GET ALL AS GEOJSON
+// COUNTIES
 // =========================================================
 
 export async function getCounties() {
@@ -211,17 +188,13 @@ export async function getCounties() {
 
   if (!response.ok) {
     throw new Error(
-      "Unable to load county boundaries."
+      "Unable to load counties."
     );
   }
 
   return response.json();
 }
 
-
-// =========================================================
-// COUNTIES — GET ONE AS GEOJSON
-// =========================================================
 
 export async function getCounty(
   countyId
@@ -241,7 +214,7 @@ export async function getCounty(
 
 
 // =========================================================
-// COUNTY — POSTGIS SPATIAL ANALYSIS
+// COUNTY SPATIAL ANALYSIS
 // =========================================================
 
 export async function getCountyAnalysis(
@@ -256,6 +229,67 @@ export async function getCountyAnalysis(
       "Unable to analyse county infrastructure."
     );
   }
+
+  return response.json();
+}
+
+
+// =========================================================
+// COUNTY COMPARISON
+// =========================================================
+
+export async function compareCounties(
+  county1,
+  county2
+) {
+  if (!county1 || !county2) {
+    throw new Error(
+      "Two counties are required for comparison."
+    );
+  }
+
+  if (
+    Number(county1) ===
+    Number(county2)
+  ) {
+    throw new Error(
+      "Please select two different counties."
+    );
+  }
+
+
+  const query =
+    new URLSearchParams({
+      county1: String(county1),
+      county2: String(county2),
+    });
+
+
+  const response = await fetch(
+    `${COUNTIES_URL}/compare?${query.toString()}`
+  );
+
+
+  if (!response.ok) {
+    let message =
+      "Unable to compare counties.";
+
+    try {
+      const errorData =
+        await response.json();
+
+      if (errorData.detail) {
+        message =
+          errorData.detail;
+      }
+
+    } catch {
+      // Keep default message.
+    }
+
+    throw new Error(message);
+  }
+
 
   return response.json();
 }

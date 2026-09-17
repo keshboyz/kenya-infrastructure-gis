@@ -1,0 +1,523 @@
+/* =========================================================
+   COUNTY COMPARISON
+========================================================= */
+
+.county-comparison {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4px 4px 50px;
+  box-sizing: border-box;
+  color: #1d2f36;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.comparison-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.comparison-header h2 {
+  margin: 5px 0 6px;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #183743;
+}
+
+.comparison-header p {
+  margin: 0;
+  max-width: 650px;
+  color: #6a777c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.comparison-label {
+  display: block;
+  color: #527b6b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.comparison-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d9e2df;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #526269;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.comparison-close:hover {
+  background: #f1f5f3;
+  border-color: #b9cbc4;
+}
+
+
+/* =========================================================
+   CONTROLS
+========================================================= */
+
+.comparison-controls {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr)
+    50px
+    minmax(180px, 1fr)
+    auto;
+  align-items: end;
+  gap: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+  background: #f7faf9;
+  border: 1px solid #dfe8e4;
+  border-radius: 10px;
+}
+
+.comparison-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.comparison-select-group label {
+  color: #59696f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.comparison-select-group select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #ccd8d4;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #263d45;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.comparison-select-group select:focus {
+  border-color: #527b6b;
+  box-shadow:
+    0 0 0 3px
+    rgba(82, 123, 107, 0.12);
+}
+
+.comparison-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  color: #527b6b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.comparison-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comparison-primary-button,
+.comparison-reset-button {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s ease;
+}
+
+.comparison-primary-button {
+  border: 1px solid #315f50;
+  background: #315f50;
+  color: #ffffff;
+}
+
+.comparison-primary-button:hover {
+  background: #284f43;
+}
+
+.comparison-primary-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.comparison-reset-button {
+  border: 1px solid #ccd8d4;
+  background: #ffffff;
+  color: #526269;
+}
+
+.comparison-reset-button:hover {
+  background: #edf3f0;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.comparison-error {
+  margin-bottom: 18px;
+  padding: 12px 15px;
+  border: 1px solid #e5c6c6;
+  border-radius: 7px;
+  background: #fff7f7;
+  color: #9c4040;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.comparison-empty-state {
+  padding: 55px 25px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #cfdad6;
+  border-radius: 10px;
+}
+
+.comparison-empty-state strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #284d41;
+  font-size: 16px;
+}
+
+.comparison-empty-state p {
+  max-width: 470px;
+  margin: 0 auto;
+  color: #7b898e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   RESULTS
+========================================================= */
+
+.comparison-results {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+
+/* =========================================================
+   COUNTY CARDS
+========================================================= */
+
+.comparison-card-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.comparison-county-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe6e3;
+  border-radius: 10px;
+  box-shadow:
+    0 2px 8px
+    rgba(28, 58, 48, 0.05);
+}
+
+.comparison-county-heading {
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid #e5ebe8;
+  background:
+    linear-gradient(
+      135deg,
+      #f2f7f4,
+      #ffffff
+    );
+}
+
+.comparison-county-heading span {
+  display: block;
+  margin-bottom: 5px;
+  color: #6b8b7e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.comparison-county-heading h3 {
+  margin: 0 0 4px;
+  color: #173f4f;
+  font-size: 22px;
+}
+
+.comparison-county-heading p {
+  margin: 0;
+  color: #748187;
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   COUNTY STATISTICS
+========================================================= */
+
+.comparison-stat-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #e5ebe8;
+}
+
+.comparison-stat {
+  min-height: 78px;
+  padding: 15px 18px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.comparison-stat span {
+  display: block;
+  margin-bottom: 7px;
+  color: #78868a;
+  font-size: 11px;
+}
+
+.comparison-stat strong {
+  display: block;
+  color: #263f49;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.comparison-population-row {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #e5ebe8;
+  border-top: 1px solid #e5ebe8;
+}
+
+.comparison-population-row > div {
+  padding: 13px 18px;
+  background: #f9fbfa;
+}
+
+.comparison-population-row span {
+  display: block;
+  margin-bottom: 4px;
+  color: #7b898d;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.comparison-population-row strong {
+  color: #40575f;
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   CHART CARDS
+========================================================= */
+
+.comparison-chart-card {
+  width: 100%;
+  padding: 18px 20px 20px;
+  background: #ffffff;
+  border: 1px solid #dfe6e3;
+  border-radius: 10px;
+  box-sizing: border-box;
+  box-shadow:
+    0 2px 8px
+    rgba(28, 58, 48, 0.04);
+}
+
+.comparison-section-heading {
+  margin-bottom: 15px;
+}
+
+.comparison-section-heading span {
+  display: block;
+  margin-bottom: 4px;
+  color: #6b8b7e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.comparison-section-heading h3 {
+  margin: 0;
+  color: #263f49;
+  font-size: 17px;
+}
+
+
+/* =========================================================
+   IMPORTANT — RECHARTS NEEDS A REAL HEIGHT
+========================================================= */
+
+.comparison-chart {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+  margin-top: 8px;
+}
+
+.comparison-chart .recharts-wrapper {
+  font-size: 11px;
+}
+
+.comparison-chart
+.recharts-cartesian-axis-tick-value {
+  fill: #68777c;
+}
+
+.comparison-chart
+.recharts-legend-item-text {
+  color: #53676e !important;
+}
+
+
+/* =========================================================
+   SPATIAL ENGINE
+========================================================= */
+
+.comparison-engine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 16px 18px;
+  background: #173f4f;
+  border-radius: 10px;
+  color: #ffffff;
+}
+
+.comparison-engine > div {
+  min-width: 190px;
+}
+
+.comparison-engine span {
+  display: block;
+  margin-bottom: 4px;
+  color: #a9c6bb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.comparison-engine strong {
+  display: block;
+  font-size: 14px;
+}
+
+.comparison-engine p {
+  margin: 0;
+  max-width: 700px;
+  color: #d6e3de;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  .comparison-controls {
+    grid-template-columns:
+      minmax(0, 1fr)
+      40px
+      minmax(0, 1fr);
+  }
+
+  .comparison-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+
+@media (max-width: 800px) {
+  .comparison-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-versus {
+    height: auto;
+    padding: 2px 0;
+  }
+
+  .comparison-actions {
+    grid-column: auto;
+    justify-content: stretch;
+  }
+
+  .comparison-primary-button,
+  .comparison-reset-button {
+    flex: 1;
+  }
+
+  .comparison-engine {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .comparison-chart {
+    height: 230px;
+    min-height: 230px;
+  }
+}
+
+
+@media (max-width: 520px) {
+  .comparison-stat-grid,
+  .comparison-population-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-header h2 {
+    font-size: 23px;
+  }
+
+  .comparison-actions {
+    flex-direction: column;
+  }
+
+  .comparison-primary-button,
+  .comparison-reset-button {
+    width: 100%;
+  }
+}

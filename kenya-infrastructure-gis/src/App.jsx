@@ -15,6 +15,7 @@ import RoadDrawing from "./components/RoadDrawing";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import CountyBoundaries from "./components/CountyBoundaries";
 import CountyAnalysisPanel from "./components/CountyAnalysisPanel";
+import CountyComparison from "./components/CountyComparison";
 
 import {
   getProjects,
@@ -1040,6 +1041,27 @@ function App() {
               Analytics
             </button>
 
+
+            <button
+              className={
+                activePage ===
+                "comparison"
+                  ? "active"
+                  : ""
+              }
+              onClick={() => {
+                setActivePage(
+                  "comparison"
+                );
+
+                setSelectedCountyAnalysis(
+                  null
+                );
+              }}
+            >
+              Compare Counties
+            </button>
+
           </nav>
 
 
@@ -1281,7 +1303,7 @@ function App() {
             ) : (
 
               <p>
-                âœ“ {projects.length}
+                Loaded: {projects.length}
                 {" "}
                 project records loaded.
               </p>
@@ -1304,7 +1326,7 @@ function App() {
             ) : (
 
               <p>
-                âœ“ {totalRoads}
+                Loaded: {totalRoads}
                 {" "}
                 road corridors loaded.
               </p>
@@ -1428,7 +1450,7 @@ function App() {
                   <div className="map-summary">
 
                     <span>
-                      ðŸ“{" "}
+                      {" "}
                       {showProjects
                         ? filteredProjects.length
                         : 0}
@@ -1438,7 +1460,7 @@ function App() {
 
 
                     <span>
-                      ðŸ›£{" "}
+                      {" "}
                       {showRoads
                         ? totalRoads
                         : 0}
@@ -2170,6 +2192,25 @@ function App() {
 
           )}
 
+
+          {/* =============================================
+              COUNTY COMPARISON
+          ============================================= */}
+
+          {activePage === "comparison" && (
+
+            <section className="page-section">
+
+              <CountyComparison
+                onClose={() =>
+                  setActivePage("map")
+                }
+              />
+
+            </section>
+
+          )}
+
         </main>
 
       </div>
@@ -2217,7 +2258,7 @@ function App() {
                   closeProjectModal
                 }
               >
-                Ã—
+                X
               </button>
 
             </div>
@@ -2487,7 +2528,7 @@ function App() {
                 onClick={closeRoadModal}
                 disabled={savingRoad}
               >
-                Ã—
+                X
               </button>
 
             </div>
@@ -2698,4 +2739,5 @@ function App() {
 
 
 export default App;
+
 

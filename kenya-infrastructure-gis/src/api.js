@@ -1,14 +1,70 @@
-const BASE_URL =
+// =========================================================
+// API CONFIGURATION
+// =========================================================
+//
+// Local development:
+// http://127.0.0.1:8000/api
+//
+// Production:
+// Set VITE_API_BASE_URL to the deployed FastAPI API.
+//
+// Example:
+// https://kenya-infrastructure-gis.onrender.com/api
+// =========================================================
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
   "http://127.0.0.1:8000/api";
 
+
 const PROJECTS_URL =
-  `${BASE_URL}/projects`;
+  `${API_BASE_URL}/projects`;
 
 const ROADS_URL =
-  `${BASE_URL}/roads`;
+  `${API_BASE_URL}/roads`;
 
 const COUNTIES_URL =
-  `${BASE_URL}/counties`;
+  `${API_BASE_URL}/counties`;
+
+
+// =========================================================
+// HELPER
+// =========================================================
+
+async function handleResponse(
+  response,
+  defaultMessage
+) {
+  if (!response.ok) {
+    let message = defaultMessage;
+
+    try {
+      const errorData =
+        await response.json();
+
+      if (errorData.detail) {
+        if (
+          typeof errorData.detail ===
+          "string"
+        ) {
+          message =
+            errorData.detail;
+        } else {
+          message =
+            JSON.stringify(
+              errorData.detail
+            );
+        }
+      }
+    } catch {
+      // Keep the default message.
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
 
 
 // =========================================================
@@ -20,18 +76,15 @@ export async function getProjects() {
     PROJECTS_URL
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load projects."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to load projects."
+  );
 }
 
 
 export async function createProject(
-  project
+  projectData
 ) {
   const response = await fetch(
     PROJECTS_URL,
@@ -44,24 +97,21 @@ export async function createProject(
       },
 
       body: JSON.stringify(
-        project
+        projectData
       ),
     }
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to create project."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to create project."
+  );
 }
 
 
 export async function updateProject(
   projectId,
-  project
+  projectData
 ) {
   const response = await fetch(
     `${PROJECTS_URL}/${projectId}`,
@@ -74,18 +124,15 @@ export async function updateProject(
       },
 
       body: JSON.stringify(
-        project
+        projectData
       ),
     }
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to update project."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to update project."
+  );
 }
 
 
@@ -99,13 +146,10 @@ export async function deleteProject(
     }
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to delete project."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to delete project."
+  );
 }
 
 
@@ -118,18 +162,15 @@ export async function getRoads() {
     ROADS_URL
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load roads."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to load roads."
+  );
 }
 
 
 export async function createRoad(
-  road
+  roadData
 ) {
   const response = await fetch(
     ROADS_URL,
@@ -142,18 +183,15 @@ export async function createRoad(
       },
 
       body: JSON.stringify(
-        road
+        roadData
       ),
     }
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to create road."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to create road."
+  );
 }
 
 
@@ -167,13 +205,10 @@ export async function deleteRoad(
     }
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to delete road."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to delete road."
+  );
 }
 
 
@@ -186,13 +221,10 @@ export async function getCounties() {
     COUNTIES_URL
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load counties."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to load counties."
+  );
 }
 
 
@@ -203,13 +235,10 @@ export async function getCounty(
     `${COUNTIES_URL}/${countyId}`
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load county."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to load county."
+  );
 }
 
 
@@ -224,13 +253,10 @@ export async function getCountyAnalysis(
     `${COUNTIES_URL}/${countyId}/analysis`
   );
 
-  if (!response.ok) {
-    throw new Error(
-      "Unable to analyse county infrastructure."
-    );
-  }
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to load county analysis."
+  );
 }
 
 
@@ -257,39 +283,18 @@ export async function compareCounties(
     );
   }
 
-
   const query =
     new URLSearchParams({
       county1: String(county1),
       county2: String(county2),
     });
 
-
   const response = await fetch(
     `${COUNTIES_URL}/compare?${query.toString()}`
   );
 
-
-  if (!response.ok) {
-    let message =
-      "Unable to compare counties.";
-
-    try {
-      const errorData =
-        await response.json();
-
-      if (errorData.detail) {
-        message =
-          errorData.detail;
-      }
-
-    } catch {
-      // Keep default message.
-    }
-
-    throw new Error(message);
-  }
-
-
-  return response.json();
+  return handleResponse(
+    response,
+    "Unable to compare counties."
+  );
 }

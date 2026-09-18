@@ -3,6 +3,15 @@
 A full-stack Web GIS application for mapping, managing, visualizing, and spatially analysing infrastructure projects and road corridors across Kenya.
 
 The application combines an interactive React and Leaflet frontend with a FastAPI backend and a PostgreSQL/PostGIS spatial database. County-level infrastructure analysis is performed dynamically using spatial queries rather than relying only on pre-calculated frontend data.
+## Live Application
+
+**Live Demo:** https://kenya-infrastructure-gis-web.onrender.com/
+
+**REST API:** https://kenya-infrastructure-gis.onrender.com/
+
+**Interactive API Documentation:** https://kenya-infrastructure-gis.onrender.com/docs
+
+> The API is hosted on a free Render instance and may take approximately 30–60 seconds to wake after a period of inactivity.
 
 ---
 
